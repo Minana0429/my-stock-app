@@ -35,12 +35,12 @@ if not df.empty:
     df['MA120'] = df['Close'].rolling(120).mean()
     df['MA240'] = df['Close'].rolling(240).mean()
     
-    # B. 計算成交量顏色與均線
+    # B. 計算成交量顏色與成交量均線
     df['Vol_Color'] = np.where(df['Close'] >= df['Close'].shift(1), 
                                'rgba(255, 0, 0, 0.4)', 'rgba(0, 255, 0, 0.4)')
     df['Vol_MA5'] = df['Volume'].rolling(5).mean()
 
-    # C. 裁切顯示範圍
+    # C. 根據使用者選擇裁切顯示範圍
     if period_option == "6mo":
         plot_df = df.tail(125)
     elif period_option == "1y":
@@ -68,6 +68,79 @@ if not df.empty:
         x=plot_df.index, y=plot_df['Close'], 
         mode='lines+markers', name='收盤價',
         line=dict(color='#1f77b4', width=1.5), 
+        marker=dict(size=3)
+    ), row=1, col=1)
+
+    # [價格區] - 五條均線
+    ma_settings = [
+        ('MA5', 'rgba(255, 165, 0, 0.5)'),
+        ('MA10', 'rgba(255, 0, 255, 0.5)'),
+        ('MA60', 'rgba(0, 128, 0, 0.4)'),
+        ('MA120', 'rgba(255, 0, 0, 0.4)'),
+        ('MA240', 'rgba(128, 0, 128, 0.4)')
+    ]
+    for ma_name, color in ma_settings:
+        fig.add_trace(go.Scatter(
+            x=plot_df.index, y=plot_df[ma_name], 
+            mode='lines', name=ma_name,
+            line=dict(width=0.8, color=color)
+        ), row=1, col=1)
+
+    # [成交量區]
+    vol_colors = df.loc[plot_df.index, 'Vol_Color']
+    fig.add_trace(go.Bar(
+        x=plot_df.index, y=plot_df['Volume'], 
+        name='成交量', 
+        marker_color=vol_colors,
+        showlegend=False
+    ), row=2, col=1)
+
+    fig.add_trace(go.Scatter(
+        x=plot_df.index, y=plot_df['Vol_MA5'], 
+        mode='lines', name='5日均量',
+        line=dict(color='rgba(255, 165, 0, 0.7)', width=1)
+    ), row=2, col=1)
+
+    # --- 5. 視覺與互動優化設定 ---
+    fig.update_layout(
+        height=800,
+        template="plotly_white",
+        hovermode='x unified', 
+        dragmode='pan', 
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        yaxis1=dict(
+            title="價格",
+            tickmode='linear',
+            dtick=t_dtick,
+            minor=dict(dtick=g_dtick, showgrid=True, gridcolor='rgba(235, 235, 235, 0.5)'),
+            gridcolor='rgba(220, 220, 220, 0.8)'
+        ),
+        xaxis1=dict(
+            showgrid=True, 
+            gridcolor='rgba(235, 235, 235, 0.5)',
+            showspikes=True,
+            spikemode='across',
+            spikesnap='cursor',
+            spikethickness=1,
+            spikecolor='rgba(100, 100, 100, 0.8)',
+            spikedash='dash'
+        ),
+        yaxis2=dict(title="成交量")
+    )
+
+    # --- 6. 顯示圖表 ---
+    st.plotly_chart(
+        fig, 
+        use_container_width=True, 
+        config={
+            'displayModeBar': False,  
+            'scrollZoom': True,       
+            'responsive': True        
+        }
+    )
+
+else:
+    st.error(f"❌ 找不到股票代號 {input_id}")
         marker=dict(size=4)
     ), row=1, col=1)
 
