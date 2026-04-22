@@ -1,19 +1,3 @@
-沒問題，我們把模式切換回最穩定的 dragmode='pan' (平移模式)。這樣在手機上，一根手指滑動是「左右移動看盤」，而不會再拉出那個難用的放大方框了。
-
-這份程式碼已經整合了：
-
-單指平移：滑動不會誤觸放大框。
-
-垂直虛線導引：手指按住會出現貫穿全圖的對齊線。
-
-動態 Y 軸：自動根據股價切換 0.1 / 1 / 5 元的專業小方格網格。
-
-手機優化：隱藏右上角礙事的小工具列。
-
-🚀 最終穩定版程式碼 (app.py)
-請將這段內容完整覆蓋你 GitHub 上的 app.py：
-
-Python
 import streamlit as st
 import yfinance as yf
 import plotly.graph_objects as go
