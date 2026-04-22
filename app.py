@@ -1,3 +1,19 @@
+哎呀，報錯了！從 image_44f441.png 來看，這是一個 SyntaxError: invalid syntax，箭頭指在 else: 身上。
+
+這通常是因為在 GitHub 上貼上代碼時，空格（縮進）亂掉了，或是少複製到了某一部分的 if。在 Python 裡，空格對錯一點點都會讓程式罷工。
+
+別擔心，我們直接把最完整的程式碼再貼一次。這次我幫你檢查好了縮進，請按照以下步驟操作：
+
+🛠️ 修復步驟：
+回到 GitHub 的 app.py 編輯頁面。
+
+Ctrl + A 全選，然後按下 Delete 全部刪乾淨（確保裡面什麼都沒有）。
+
+複製下方這段完整的程式碼並貼上去。
+
+按下 Commit changes。
+
+Python
 import streamlit as st
 import yfinance as yf
 import plotly.graph_objects as go
@@ -105,7 +121,7 @@ if not df.empty:
     fig.update_layout(
         height=800,
         template="plotly_white",
-        hovermode='x unified', # 💡 使用 'x unified' 會有較強的垂直導引效果
+        hovermode='x unified', 
         dragmode='pan', 
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         yaxis1=dict(
@@ -118,18 +134,17 @@ if not df.empty:
         xaxis1=dict(
             showgrid=True, 
             gridcolor='rgba(235, 235, 235, 0.5)',
-            # 💡 核心功能：垂直線隨滑鼠/手指移動
             showspikes=True,
             spikemode='across',
             spikesnap='cursor',
             spikethickness=1,
             spikecolor='rgba(100, 100, 100, 0.8)',
-            spikedash='dash' # 虛線
+            spikedash='dash'
         ),
         yaxis2=dict(title="成交量")
     )
 
-    # --- 6. 顯示圖表 (手機優化) ---
+    # --- 6. 顯示圖表 ---
     st.plotly_chart(
         fig, 
         use_container_width=True, 
@@ -142,8 +157,3 @@ if not df.empty:
 
 else:
     st.error(f"❌ 找不到股票代號 {input_id}")
-    # 顯示圖表
-    st.plotly_chart(fig, width='stretch')
-
-else:
-    st.error(f"❌ 找不到股票代號 {input_id} 的資料，請確認輸入是否正確。")
