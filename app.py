@@ -1,3 +1,19 @@
+沒問題，我們把模式切換回最穩定的 dragmode='pan' (平移模式)。這樣在手機上，一根手指滑動是「左右移動看盤」，而不會再拉出那個難用的放大方框了。
+
+這份程式碼已經整合了：
+
+單指平移：滑動不會誤觸放大框。
+
+垂直虛線導引：手指按住會出現貫穿全圖的對齊線。
+
+動態 Y 軸：自動根據股價切換 0.1 / 1 / 5 元的專業小方格網格。
+
+手機優化：隱藏右上角礙事的小工具列。
+
+🚀 最終穩定版程式碼 (app.py)
+請將這段內容完整覆蓋你 GitHub 上的 app.py：
+
+Python
 import streamlit as st
 import yfinance as yf
 import plotly.graph_objects as go
@@ -15,6 +31,7 @@ period_option = st.sidebar.selectbox("顯示範圍", ["6mo", "1y", "2y"], index=
 # --- 2. 資料獲取函數 ---
 @st.cache_data(ttl=3600)
 def get_stock_data(symbol_num):
+    # 背景統一抓取 5 年資料，確保 MA240 有緩衝數據
     for suffix in [".TW", ".TWO"]:
         target = f"{symbol_num}{suffix}"
         df = yf.download(target, period="5y", progress=False)
@@ -35,12 +52,12 @@ if not df.empty:
     df['MA120'] = df['Close'].rolling(120).mean()
     df['MA240'] = df['Close'].rolling(240).mean()
     
-    # B. 計算成交量顏色與成交量均線
+    # B. 計算成交量顏色與均線
     df['Vol_Color'] = np.where(df['Close'] >= df['Close'].shift(1), 
                                'rgba(255, 0, 0, 0.4)', 'rgba(0, 255, 0, 0.4)')
     df['Vol_MA5'] = df['Volume'].rolling(5).mean()
 
-    # C. 根據使用者選擇裁切顯示範圍
+    # C. 裁切顯示範圍
     if period_option == "6mo":
         plot_df = df.tail(125)
     elif period_option == "1y":
@@ -68,11 +85,10 @@ if not df.empty:
         x=plot_df.index, y=plot_df['Close'], 
         mode='lines+markers', name='收盤價',
         line=dict(color='#1f77b4', width=1.5), 
-        marker=dict(size=3),
-        hoverlabel=dict(namelength=-1)
+        marker=dict(size=3)
     ), row=1, col=1)
 
-    # [價格區] - 五條均線
+    # [價格區] - 均線 (淡化處理)
     ma_settings = [
         ('MA5', 'rgba(255, 165, 0, 0.5)'),
         ('MA10', 'rgba(255, 0, 255, 0.5)'),
@@ -85,7 +101,7 @@ if not df.empty:
             x=plot_df.index, y=plot_df[ma_name], 
             mode='lines', name=ma_name,
             line=dict(width=0.8, color=color),
-            hoverinfo='skip' # 均線不干擾觸控彈窗
+            hoverinfo='skip'
         ), row=1, col=1)
 
     # [成交量區]
@@ -104,19 +120,20 @@ if not df.empty:
         hoverinfo='skip'
     ), row=2, col=1)
 
-    # --- 5. 終極觸控優化設定 ---
+    # --- 5. 視覺與互動優化設定 ---
     fig.update_layout(
         height=800,
         template="plotly_white",
         hovermode='x unified', 
-        dragmode='zoom', # 💡 重要：開啟縮放模式
+        # 💡 改回 'pan' 模式：單指滑動是移動，雙指捏合是縮放
+        dragmode='pan', 
         hoverdistance=100,
         spikedistance=1000,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         
         yaxis1=dict(
             title="價格",
-            fixedrange=False, # 💡 關鍵：解除 Y 軸鎖定
+            fixedrange=False, # 允許 Y 軸縮放
             tickmode='linear',
             dtick=t_dtick,
             minor=dict(dtick=g_dtick, showgrid=True, gridcolor='rgba(235, 235, 235, 0.5)'),
@@ -124,8 +141,9 @@ if not df.empty:
         ),
         xaxis1=dict(
             showgrid=True, 
-            fixedrange=False, # 💡 關鍵：解除 X 軸鎖定
+            fixedrange=False, # 允許 X 軸縮放
             gridcolor='rgba(235, 235, 235, 0.5)',
+            # 💡 垂直虛線導引
             showspikes=True,
             spikemode='across',
             spikesnap='cursor',
@@ -136,17 +154,16 @@ if not df.empty:
         yaxis2=dict(title="成交量", fixedrange=False)
     )
 
-    # --- 6. 顯示圖表 (強制觸控感應) ---
+    # --- 6. 顯示圖表 (手機觸控開關) ---
     st.plotly_chart(
         fig, 
         use_container_width=True, 
         config={
-            'displayModeBar': False,  
-            'scrollZoom': True,       # 💡 開啟兩指捏合
+            'displayModeBar': False,  # 隱藏工具欄防止誤觸
+            'scrollZoom': True,       # 開啟兩指捏合縮放感應
             'responsive': True,
-            'doubleClick': 'reset',
-            'displaylogo': False,
-            'modeBarButtonsToRemove': ['select2d', 'lasso2d']
+            'doubleClick': 'reset',   # 點兩下重設視圖
+            'displaylogo': False
         }
     )
 
