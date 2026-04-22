@@ -35,12 +35,12 @@ if not df.empty:
     df['MA120'] = df['Close'].rolling(120).mean()
     df['MA240'] = df['Close'].rolling(240).mean()
     
-    # B. 計算成交量顏色與成交量均線
+    # B. 計算成交量顏色與均線
     df['Vol_Color'] = np.where(df['Close'] >= df['Close'].shift(1), 
                                'rgba(255, 0, 0, 0.4)', 'rgba(0, 255, 0, 0.4)')
     df['Vol_MA5'] = df['Volume'].rolling(5).mean()
 
-    # C. 根據使用者選擇裁切顯示範圍
+    # C. 裁切顯示範圍
     if period_option == "6mo":
         plot_df = df.tail(125)
     elif period_option == "1y":
@@ -68,10 +68,10 @@ if not df.empty:
         x=plot_df.index, y=plot_df['Close'], 
         mode='lines+markers', name='收盤價',
         line=dict(color='#1f77b4', width=1.5), 
-        marker=dict(size=3)
+        marker=dict(size=4)
     ), row=1, col=1)
 
-    # [價格區] - 五條均線
+    # [價格區] - 均線 (hoverinfo='skip' 避免干擾線的移動)
     ma_settings = [
         ('MA5', 'rgba(255, 165, 0, 0.5)'),
         ('MA10', 'rgba(255, 0, 255, 0.5)'),
@@ -83,7 +83,8 @@ if not df.empty:
         fig.add_trace(go.Scatter(
             x=plot_df.index, y=plot_df[ma_name], 
             mode='lines', name=ma_name,
-            line=dict(width=0.8, color=color)
+            line=dict(width=0.8, color=color),
+            hoverinfo='skip'
         ), row=1, col=1)
 
     # [成交量區]
@@ -95,37 +96,34 @@ if not df.empty:
         showlegend=False
     ), row=2, col=1)
 
-    fig.add_trace(go.Scatter(
-        x=plot_df.index, y=plot_df['Vol_MA5'], 
-        mode='lines', name='5日均量',
-        line=dict(color='rgba(255, 165, 0, 0.7)', width=1)
-    ), row=2, col=1)
-
-    # --- 5. 視覺與互動優化設定 ---
+    # --- 5. 終極觸控優化 (讓線「拉著走」) ---
     fig.update_layout(
         height=800,
         template="plotly_white",
+        # 💡 關鍵 1：x unified 能讓一整串數值出現，且線會自動吸附
         hovermode='x unified', 
-        dragmode='pan', 
+        dragmode='pan',
+        # 💡 關鍵 2：增加感應距離，讓手指更容易抓到線
+        hoverdistance=100,
+        spikedistance=1000,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        
         yaxis1=dict(
-            title="價格",
-            tickmode='linear',
-            dtick=t_dtick,
+            title="價格", fixedrange=False, tickmode='linear', dtick=t_dtick,
             minor=dict(dtick=g_dtick, showgrid=True, gridcolor='rgba(235, 235, 235, 0.5)'),
             gridcolor='rgba(220, 220, 220, 0.8)'
         ),
         xaxis1=dict(
-            showgrid=True, 
-            gridcolor='rgba(235, 235, 235, 0.5)',
+            showgrid=True, fixedrange=False, gridcolor='rgba(235, 235, 235, 0.5)',
+            # 💡 垂直虛線設定
             showspikes=True,
             spikemode='across',
-            spikesnap='cursor',
+            spikesnap='data', # 💡 讓線吸附在數據點上，更好拉動
             spikethickness=1,
-            spikecolor='rgba(100, 100, 100, 0.8)',
+            spikecolor='rgba(150, 150, 150, 0.8)',
             spikedash='dash'
         ),
-        yaxis2=dict(title="成交量")
+        yaxis2=dict(title="成交量", fixedrange=False)
     )
 
     # --- 6. 顯示圖表 ---
@@ -135,9 +133,11 @@ if not df.empty:
         config={
             'displayModeBar': False,  
             'scrollZoom': True,       
-            'responsive': True        
+            'responsive': True,
+            'doubleClick': 'reset',
+            # 💡 關鍵 3：這能解決手機瀏覽器攔截觸控的問題
+            'displaylogo': False
         }
     )
-
 else:
     st.error(f"❌ 找不到股票代號 {input_id}")
