@@ -105,7 +105,7 @@ if not df.empty:
     fig.update_layout(
         height=800,
         template="plotly_white",
-        hovermode='x unified', 
+        hovermode='x unified', # 💡 使用 'x unified' 會有較強的垂直導引效果
         dragmode='pan', 
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         yaxis1=dict(
@@ -118,17 +118,18 @@ if not df.empty:
         xaxis1=dict(
             showgrid=True, 
             gridcolor='rgba(235, 235, 235, 0.5)',
+            # 💡 核心功能：垂直線隨滑鼠/手指移動
             showspikes=True,
             spikemode='across',
             spikesnap='cursor',
             spikethickness=1,
             spikecolor='rgba(100, 100, 100, 0.8)',
-            spikedash='dash'
+            spikedash='dash' # 虛線
         ),
         yaxis2=dict(title="成交量")
     )
 
-    # --- 6. 顯示圖表 ---
+    # --- 6. 顯示圖表 (手機優化) ---
     st.plotly_chart(
         fig, 
         use_container_width=True, 
