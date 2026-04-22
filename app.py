@@ -68,7 +68,8 @@ if not df.empty:
         x=plot_df.index, y=plot_df['Close'], 
         mode='lines+markers', name='收盤價',
         line=dict(color='#1f77b4', width=1.5), 
-        marker=dict(size=3)
+        marker=dict(size=3),
+        hoverlabel=dict(namelength=-1)
     ), row=1, col=1)
 
     # [價格區] - 五條均線
@@ -83,7 +84,8 @@ if not df.empty:
         fig.add_trace(go.Scatter(
             x=plot_df.index, y=plot_df[ma_name], 
             mode='lines', name=ma_name,
-            line=dict(width=0.8, color=color)
+            line=dict(width=0.8, color=color),
+            hoverinfo='skip' # 均線不干擾觸控彈窗
         ), row=1, col=1)
 
     # [成交量區]
@@ -98,21 +100,23 @@ if not df.empty:
     fig.add_trace(go.Scatter(
         x=plot_df.index, y=plot_df['Vol_MA5'], 
         mode='lines', name='5日均量',
-        line=dict(color='rgba(255, 165, 0, 0.7)', width=1)
+        line=dict(color='rgba(255, 165, 0, 0.7)', width=1),
+        hoverinfo='skip'
     ), row=2, col=1)
 
-# --- 5. 視覺與互動優化設定 (修正捏合感應) ---
+    # --- 5. 終極觸控優化設定 ---
     fig.update_layout(
         height=800,
         template="plotly_white",
         hovermode='x unified', 
-        # 💡 關鍵 1：將 dragmode 改回 'zoom'。
-        # 雖然這會讓單指變成「選取區域」，但在手機上這是開啟雙指捏合感應的唯一方法。
-        dragmode='zoom', 
+        dragmode='zoom', # 💡 重要：開啟縮放模式
+        hoverdistance=100,
+        spikedistance=1000,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        
         yaxis1=dict(
             title="價格",
-            fixedrange=False, # 💡 關鍵 2：務必確保 Y 軸不是固定的
+            fixedrange=False, # 💡 關鍵：解除 Y 軸鎖定
             tickmode='linear',
             dtick=t_dtick,
             minor=dict(dtick=g_dtick, showgrid=True, gridcolor='rgba(235, 235, 235, 0.5)'),
@@ -120,7 +124,7 @@ if not df.empty:
         ),
         xaxis1=dict(
             showgrid=True, 
-            fixedrange=False, # 💡 關鍵 3：務必確保 X 軸不是固定的
+            fixedrange=False, # 💡 關鍵：解除 X 軸鎖定
             gridcolor='rgba(235, 235, 235, 0.5)',
             showspikes=True,
             spikemode='across',
@@ -132,17 +136,19 @@ if not df.empty:
         yaxis2=dict(title="成交量", fixedrange=False)
     )
 
-    # --- 6. 顯示圖表 (開啟手機捏合開關) ---
+    # --- 6. 顯示圖表 (強制觸控感應) ---
     st.plotly_chart(
         fig, 
         use_container_width=True, 
         config={
             'displayModeBar': False,  
-            'scrollZoom': True,       # 💡 這是捏合縮放的核心開關
+            'scrollZoom': True,       # 💡 開啟兩指捏合
             'responsive': True,
             'doubleClick': 'reset',
-            'displaylogo': False
+            'displaylogo': False,
+            'modeBarButtonsToRemove': ['select2d', 'lasso2d']
         }
     )
+
 else:
     st.error(f"❌ 找不到股票代號 {input_id}")
