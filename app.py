@@ -1,19 +1,3 @@
-哎呀，報錯了！從 image_44f441.png 來看，這是一個 SyntaxError: invalid syntax，箭頭指在 else: 身上。
-
-這通常是因為在 GitHub 上貼上代碼時，空格（縮進）亂掉了，或是少複製到了某一部分的 if。在 Python 裡，空格對錯一點點都會讓程式罷工。
-
-別擔心，我們直接把最完整的程式碼再貼一次。這次我幫你檢查好了縮進，請按照以下步驟操作：
-
-🛠️ 修復步驟：
-回到 GitHub 的 app.py 編輯頁面。
-
-Ctrl + A 全選，然後按下 Delete 全部刪乾淨（確保裡面什麼都沒有）。
-
-複製下方這段完整的程式碼並貼上去。
-
-按下 Commit changes。
-
-Python
 import streamlit as st
 import yfinance as yf
 import plotly.graph_objects as go
