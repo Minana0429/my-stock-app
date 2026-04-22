@@ -129,16 +129,26 @@ if not df.empty:
         yaxis2=dict(title="成交量")
     )
 
-    # --- 6. 顯示圖表 (手機優化) ---
+# --- 6. 顯示圖表 (手機觸控加強版) ---
     st.plotly_chart(
         fig, 
         use_container_width=True, 
         config={
             'displayModeBar': False,  
-            'scrollZoom': True,       
-            'responsive': True        
+            'scrollZoom': True,       # 💡 允許捏合縮放
+            'responsive': True,
+            'doubleClick': 'reset',   # 💡 雙擊回原狀
+            # 💡 關鍵：增加這行，防止手機瀏覽器干擾觸控
+            'staticPlot': False,
         }
     )
 
+    # 💡 為了讓垂直線更靈敏，我們在 update_layout 也要補一個設定
+    fig.update_layout(
+        hovermode='x unified',
+        # 增加這個設定讓滑動更順暢
+        hoverdistance=100, 
+        spikedistance=1000,
+    )
 else:
     st.error(f"❌ 找不到股票代號 {input_id}")
