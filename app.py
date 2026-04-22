@@ -9,18 +9,16 @@ import numpy as np
 st.set_page_config(page_title="專業級股票分析系統", layout="wide")
 
 st.sidebar.header("搜尋條件")
-input_id = st.sidebar.text_input("請輸入股票代號 (如 8358, 2330)", value="8358")
+input_id = st.sidebar.text_input("請輸入股票代號", value="8358")
 period_option = st.sidebar.selectbox("顯示範圍", ["6mo", "1y", "2y"], index=1)
 
 # --- 2. 資料獲取函數 ---
 @st.cache_data(ttl=3600)
 def get_stock_data(symbol_num):
-    # 背景統一抓取 5 年資料，以確保 MA240 (年線) 有足夠數據計算不致斷線
     for suffix in [".TW", ".TWO"]:
         target = f"{symbol_num}{suffix}"
         df = yf.download(target, period="5y", progress=False)
         if not df.empty:
-            # 處理新版 yfinance 的多重標題問題
             if isinstance(df.columns, pd.MultiIndex):
                 df.columns = df.columns.droplevel(1)
             return df, target
@@ -38,12 +36,11 @@ if not df.empty:
     df['MA240'] = df['Close'].rolling(240).mean()
     
     # B. 計算成交量顏色與成交量均線
-    # 漲顯示紅色 (rgba 255,0,0)，跌顯示綠色 (rgba 0,255,0)
     df['Vol_Color'] = np.where(df['Close'] >= df['Close'].shift(1), 
-                               'rgba(255, 0, 0, 0.5)', 'rgba(0, 255, 0, 0.5)')
+                               'rgba(255, 0, 0, 0.4)', 'rgba(0, 255, 0, 0.4)')
     df['Vol_MA5'] = df['Volume'].rolling(5).mean()
 
-    # C. 根據使用者選擇裁切顯示範圍 (plot_df)
+    # C. 根據使用者選擇裁切顯示範圍
     if period_option == "6mo":
         plot_df = df.tail(125)
     elif period_option == "1y":
@@ -54,19 +51,19 @@ if not df.empty:
     # D. 動態 Y 軸刻度邏輯
     latest_price = float(plot_df['Close'].iloc[-1])
     if latest_price < 100:
-        g_dtick, t_dtick = 0.1, 1.0  # 100元以下：0.1元網格，1元標數字
+        g_dtick, t_dtick = 0.1, 1.0
     elif 100 <= latest_price < 500:
-        g_dtick, t_dtick = 1.0, 5.0  # 100-500元：1元網格，5元標數字
+        g_dtick, t_dtick = 1.0, 5.0
     elif 500 <= latest_price < 1000:
-        g_dtick, t_dtick = 1.0, 10.0 # 500-1000元：1元網格，10元標數字
+        g_dtick, t_dtick = 1.0, 10.0
     else:
-        g_dtick, t_dtick = 5.0, 25.0 # 1000元以上：5元網格，25元標數字
+        g_dtick, t_dtick = 5.0, 25.0
 
-    # --- 4. 開始繪圖 (價量雙軸圖) ---
+    # --- 4. 繪圖設定 ---
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, 
                        vertical_spacing=0.05, row_heights=[0.75, 0.25])
 
-    # [價格區] - 收盤價主線 (稍粗，含點)
+    # [價格區] - 收盤價
     fig.add_trace(go.Scatter(
         x=plot_df.index, y=plot_df['Close'], 
         mode='lines+markers', name='收盤價',
@@ -74,13 +71,13 @@ if not df.empty:
         marker=dict(size=3)
     ), row=1, col=1)
 
-    # [價格區] - 五條均線 (較細且淡化)
+    # [價格區] - 五條均線
     ma_settings = [
-        ('MA5', 'rgba(255, 165, 0, 0.6)'),   # 橘色
-        ('MA10', 'rgba(255, 0, 255, 0.6)'),  # 洋紅
-        ('MA60', 'rgba(0, 128, 0, 0.5)'),    # 綠色
-        ('MA120', 'rgba(255, 0, 0, 0.5)'),   # 紅色
-        ('MA240', 'rgba(128, 0, 128, 0.5)')  # 紫色
+        ('MA5', 'rgba(255, 165, 0, 0.5)'),
+        ('MA10', 'rgba(255, 0, 255, 0.5)'),
+        ('MA60', 'rgba(0, 128, 0, 0.4)'),
+        ('MA120', 'rgba(255, 0, 0, 0.4)'),
+        ('MA240', 'rgba(128, 0, 128, 0.4)')
     ]
     for ma_name, color in ma_settings:
         fig.add_trace(go.Scatter(
@@ -89,7 +86,7 @@ if not df.empty:
             line=dict(width=0.8, color=color)
         ), row=1, col=1)
 
-    # [成交量區] - 隨漲跌變色的長條圖
+    # [成交量區]
     vol_colors = df.loc[plot_df.index, 'Vol_Color']
     fig.add_trace(go.Bar(
         x=plot_df.index, y=plot_df['Volume'], 
@@ -98,40 +95,53 @@ if not df.empty:
         showlegend=False
     ), row=2, col=1)
 
-    # [成交量區] - 成交量 5 日均線
     fig.add_trace(go.Scatter(
         x=plot_df.index, y=plot_df['Vol_MA5'], 
         mode='lines', name='5日均量',
-        line=dict(color='rgba(255, 165, 0, 0.8)', width=1)
+        line=dict(color='rgba(255, 165, 0, 0.7)', width=1)
     ), row=2, col=1)
 
-    # --- 5. 圖表視覺格式設定 (小方格背景) ---
+    # --- 5. 視覺與互動優化設定 ---
     fig.update_layout(
-        height=850,
+        height=800,
         template="plotly_white",
-        hovermode='x unified',
+        hovermode='x unified', # 💡 使用 'x unified' 會有較強的垂直導引效果
+        dragmode='pan', 
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        # Y 軸價格區域設定
         yaxis1=dict(
             title="價格",
             tickmode='linear',
-            tick0=0,
-            dtick=t_dtick,       # 標籤間距
-            minor=dict(
-                dtick=g_dtick,   # 網格間距 (小方格)
-                showgrid=True,
-                gridcolor='rgba(235, 235, 235, 0.5)'
-            ),
+            dtick=t_dtick,
+            minor=dict(dtick=g_dtick, showgrid=True, gridcolor='rgba(235, 235, 235, 0.5)'),
             gridcolor='rgba(220, 220, 220, 0.8)'
         ),
-        # X 軸垂直線設定 (小方格垂直線)
         xaxis1=dict(
-            showgrid=True,
-            gridcolor='rgba(235, 235, 235, 0.5)'
+            showgrid=True, 
+            gridcolor='rgba(235, 235, 235, 0.5)',
+            # 💡 核心功能：垂直線隨滑鼠/手指移動
+            showspikes=True,
+            spikemode='across',
+            spikesnap='cursor',
+            spikethickness=1,
+            spikecolor='rgba(100, 100, 100, 0.8)',
+            spikedash='dash' # 虛線
         ),
         yaxis2=dict(title="成交量")
     )
 
+    # --- 6. 顯示圖表 (手機優化) ---
+    st.plotly_chart(
+        fig, 
+        use_container_width=True, 
+        config={
+            'displayModeBar': False,  
+            'scrollZoom': True,       
+            'responsive': True        
+        }
+    )
+
+else:
+    st.error(f"❌ 找不到股票代號 {input_id}")
     # 顯示圖表
     st.plotly_chart(fig, width='stretch')
 
