@@ -15,7 +15,6 @@ period_option = st.sidebar.selectbox("顯示範圍", ["6mo", "1y", "2y"], index=
 # --- 2. 資料獲取函數 ---
 @st.cache_data(ttl=3600)
 def get_stock_data(symbol_num):
-    # 背景統一抓取 5 年資料，確保 MA240 有緩衝數據
     for suffix in [".TW", ".TWO"]:
         target = f"{symbol_num}{suffix}"
         df = yf.download(target, period="5y", progress=False)
@@ -69,10 +68,11 @@ if not df.empty:
         x=plot_df.index, y=plot_df['Close'], 
         mode='lines+markers', name='收盤價',
         line=dict(color='#1f77b4', width=1.5), 
-        marker=dict(size=3)
+        marker=dict(size=4),
+        hoverlabel=dict(namelength=-1)
     ), row=1, col=1)
 
-    # [價格區] - 均線 (淡化處理)
+    # [價格區] - 均線
     ma_settings = [
         ('MA5', 'rgba(255, 165, 0, 0.5)'),
         ('MA10', 'rgba(255, 0, 255, 0.5)'),
@@ -104,49 +104,57 @@ if not df.empty:
         hoverinfo='skip'
     ), row=2, col=1)
 
-    # --- 5. 視覺與互動優化設定 ---
+    # --- 5. 視覺與互動優化設定 (專業十字準星 + 即時數值) ---
     fig.update_layout(
         height=800,
         template="plotly_white",
-        hovermode='x unified', 
-        # 💡 改回 'pan' 模式：單指滑動是移動，雙指捏合是縮放
+        hovermode='x', # 💡 使用 'x' 模式讓數據標籤靠近手指
         dragmode='pan', 
         hoverdistance=100,
         spikedistance=1000,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        legend=dict(
+            orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1,
+            itemclick=False
+        ),
         
         yaxis1=dict(
             title="價格",
-            fixedrange=False, # 允許 Y 軸縮放
+            fixedrange=False,
             tickmode='linear',
             dtick=t_dtick,
             minor=dict(dtick=g_dtick, showgrid=True, gridcolor='rgba(235, 235, 235, 0.5)'),
-            gridcolor='rgba(220, 220, 220, 0.8)'
+            gridcolor='rgba(220, 220, 220, 0.8)',
+            # 💡 水平導引線
+            showspikes=True,
+            spikemode='across',
+            spikethickness=1,
+            spikecolor='rgba(150, 150, 150, 0.5)',
+            spikedash='dash'
         ),
         xaxis1=dict(
             showgrid=True, 
-            fixedrange=False, # 允許 X 軸縮放
+            fixedrange=False,
             gridcolor='rgba(235, 235, 235, 0.5)',
-            # 💡 垂直虛線導引
+            # 💡 垂直導引線
             showspikes=True,
-            spikemode='across',
+            spikemode='across+marker',
             spikesnap='cursor',
             spikethickness=1,
-            spikecolor='rgba(100, 100, 100, 0.8)',
+            spikecolor='rgba(150, 150, 150, 0.5)',
             spikedash='dash'
         ),
         yaxis2=dict(title="成交量", fixedrange=False)
     )
 
-    # --- 6. 顯示圖表 (手機觸控開關) ---
+    # --- 6. 顯示圖表 (手機觸控優化) ---
     st.plotly_chart(
         fig, 
         use_container_width=True, 
         config={
-            'displayModeBar': False,  # 隱藏工具欄防止誤觸
-            'scrollZoom': True,       # 開啟兩指捏合縮放感應
+            'displayModeBar': False,  
+            'scrollZoom': True,       # 💡 開啟捏合縮放感應
             'responsive': True,
-            'doubleClick': 'reset',   # 點兩下重設視圖
+            'doubleClick': 'reset',   
             'displaylogo': False
         }
     )
