@@ -101,15 +101,18 @@ if not df.empty:
         line=dict(color='rgba(255, 165, 0, 0.7)', width=1)
     ), row=2, col=1)
 
-    # --- 5. 視覺與互動優化設定 ---
+# --- 5. 視覺與互動優化設定 (修正捏合感應) ---
     fig.update_layout(
         height=800,
         template="plotly_white",
-        hovermode='x unified', # 💡 使用 'x unified' 會有較強的垂直導引效果
-        dragmode='pan', 
+        hovermode='x unified', 
+        # 💡 關鍵 1：將 dragmode 改回 'zoom'。
+        # 雖然這會讓單指變成「選取區域」，但在手機上這是開啟雙指捏合感應的唯一方法。
+        dragmode='zoom', 
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         yaxis1=dict(
             title="價格",
+            fixedrange=False, # 💡 關鍵 2：務必確保 Y 軸不是固定的
             tickmode='linear',
             dtick=t_dtick,
             minor=dict(dtick=g_dtick, showgrid=True, gridcolor='rgba(235, 235, 235, 0.5)'),
@@ -117,38 +120,29 @@ if not df.empty:
         ),
         xaxis1=dict(
             showgrid=True, 
+            fixedrange=False, # 💡 關鍵 3：務必確保 X 軸不是固定的
             gridcolor='rgba(235, 235, 235, 0.5)',
-            # 💡 核心功能：垂直線隨滑鼠/手指移動
             showspikes=True,
             spikemode='across',
             spikesnap='cursor',
             spikethickness=1,
             spikecolor='rgba(100, 100, 100, 0.8)',
-            spikedash='dash' # 虛線
+            spikedash='dash'
         ),
-        yaxis2=dict(title="成交量")
+        yaxis2=dict(title="成交量", fixedrange=False)
     )
 
-# --- 6. 顯示圖表 (手機觸控加強版) ---
+    # --- 6. 顯示圖表 (開啟手機捏合開關) ---
     st.plotly_chart(
         fig, 
         use_container_width=True, 
         config={
             'displayModeBar': False,  
-            'scrollZoom': True,       # 💡 允許捏合縮放
+            'scrollZoom': True,       # 💡 這是捏合縮放的核心開關
             'responsive': True,
-            'doubleClick': 'reset',   # 💡 雙擊回原狀
-            # 💡 關鍵：增加這行，防止手機瀏覽器干擾觸控
-            'staticPlot': False,
+            'doubleClick': 'reset',
+            'displaylogo': False
         }
-    )
-
-    # 💡 為了讓垂直線更靈敏，我們在 update_layout 也要補一個設定
-    fig.update_layout(
-        hovermode='x unified',
-        # 增加這個設定讓滑動更順暢
-        hoverdistance=100, 
-        spikedistance=1000,
     )
 else:
     st.error(f"❌ 找不到股票代號 {input_id}")
