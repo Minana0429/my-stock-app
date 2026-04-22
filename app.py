@@ -212,5 +212,5 @@ else:
             'displaylogo': False
         }
     )
-else:
+    else:
     st.error(f"❌ 找不到股票代號 {input_id}")
